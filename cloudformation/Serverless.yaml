@@ -1,0 +1,189 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Detectify screenshot service
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  Environment:
+    Type: String
+  Service:
+    Type: String
+  ScreenShotBucket:
+    Type: String
+
+Resources:
+
+  # ROLES
+  ApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: apigateway.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: '/'
+      Policies:
+      - PolicyName: Lambda
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: '*'
+      RoleName: !Sub ${Service}-Api-Role
+  ReceiveListRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: '/'
+      Policies:
+      - PolicyName: logs
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+              - dynamodb:PutItem
+            Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Service}
+  ScreenShotRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: '/'
+      Policies:
+      - PolicyName: ScreenShotPolicy
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+              - dynamodb:UpdateItem
+              - dynamodb:DescribeStream
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:ListStreams
+            Resource:
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Service}*
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Service}/*
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:ListBucket
+            - s3:GetBucketLocation
+            - s3:GetObjectVersion
+            - s3:PutObject
+            - s3:GetLifecycleConfiguration
+            - s3:PutLifecycleConfiguration
+            Resource:
+              - !Sub arn:aws:s3:::${ScreenShotBucket}
+              - !Sub arn:aws:s3:::${ScreenShotBucket}/*
+  RetriveListRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${Service}-RetriveListRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - apigateway.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: '/'
+      Policies:
+      - PolicyName: logs
+        PolicyDocument:
+          Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:Query
+            Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Service}
+
+  # LAMBDAS
+  DetectifyScreenshotAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: !Sub s3://${Service}-deploy-${Environment}/swagger/Swagger.yaml
+  ReceiveListLambda:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - ReceiveListRole
+    Properties:
+      FunctionName: !Sub ${Service}-receiveList
+      Handler: handler.handler
+      Runtime: nodejs8.10
+      CodeUri: ../lambdas/receiveList
+      Role: !GetAtt ReceiveListRole.Arn
+      Description: Receive a list of URL:s to store in DynamoDB
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          ENV: !Sub ${Environment}
+          TABLE: !Sub ${Service}
+  ScreenShotLambda:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - ScreenShotRole
+    Properties:
+      FunctionName: !Sub ${Service}-createScreenshot
+      Handler: handler.handler
+      Runtime: nodejs8.10
+      CodeUri: ../lambdas/createScreenshot
+      Role: !GetAtt ScreenShotRole.Arn
+      Description: Create screenshots of the urls receieved from the DynamoDB-trigger
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          ENV: !Sub ${Environment}
+          TABLE: !Sub ${Service}
+          BUCKET: !Sub ${Service}-screenshots-${Environment}
+
+  # STREAMS
+  ScreenShotStream:
+    Type: AWS::Lambda::EventSourceMapping
+    DependsOn:
+      - ScreenShotLambda
+    Properties:
+      BatchSize: 10
+      Enabled: True
+      EventSourceArn:
+        Fn::ImportValue: ScreenshotStreamARN
+      FunctionName:  !Sub ${Service}-createScreenshot
+      StartingPosition: LATEST

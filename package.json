@@ -1,0 +1,18 @@
+{
+  "name": "Detectify_screenshot_Service",
+  "version": "1.0.0",
+  "description": "Create screenshots from list of urls",
+  "main": "index.js",
+  "repository": "https://github.com/0libre/ScreenshotService.git",
+  "author": "0libre <o.bredenberg@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "standard": "^10.0.3",
+    "valid-url": "^1.0.9",
+    "yarn-recursive": "^1.0.5"
+  },
+  "scripts": {
+    "recursive": "yarn-recursive",
+    "lint": "standard --fix 'lambdas/**/*.js'"
+  }
+}

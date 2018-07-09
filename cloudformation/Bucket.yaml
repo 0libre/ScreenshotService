@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Deployment detectify screenshot service S3 Bucket
+Parameters:
+  BucketName:
+    Type: String
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+Outputs:
+  BucketName:
+    Value: !Ref S3Bucket
+    Description: Name of the S3 bucket.

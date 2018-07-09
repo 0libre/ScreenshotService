@@ -1,0 +1,169 @@
+---
+swagger: '2.0'
+info:
+  version: '1.0'
+  description:
+    This API allows users to send lists of URL:s to screenshot.
+    It also allows users to query their lists using a token received in their initial request.
+  title:
+    Fn::Sub: ${Service}
+paths:
+  /:
+    post:
+      summary: Receives a list of URLs to screenshot
+      description:
+        This endpoint takes in a list of URLs and sends a response with all urls and coresponding tokens used to later retrive the screenshots.
+      responses:
+        '200':
+          description: "200 response"
+        '400':
+          description: "400 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      produces:
+        - application/json
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::Sub: arn:aws:iam::${AWS::AccountId}:role/${Service}-Api-Role
+        responses:
+          4\d{2}:
+            statusCode: 400
+          default:
+            statusCode: 200
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${Service}-receiveList/invocations
+        passthroughBehavior: "when_no_templates"
+        httpMethod: "POST"
+        type: "aws"
+    options:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+          schema:
+            $ref: '#/definitions/Empty'
+      x-amazon-apigateway-integration:
+        passthroughBehavior: when_no_match
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+              method.response.header.Access-Control-Allow-Methods: '''POST'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            statusCode: 200
+        type: mock
+  /{token}:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      parameters:
+      - name: token
+        in: path
+        required: true
+      responses:
+        '200':
+          description: "200 response"
+          headers:
+            Access-Control-Allow-Origin:
+              type: "string"
+            Access-Control-Allow-Methods:
+              type: "string"
+            Access-Control-Allow-Headers:
+              type: "string"
+      x-amazon-apigateway-integration:
+        credentials:
+          Fn::Sub: "arn:aws:iam::${AWS::AccountId}:role/${Service}-RetriveListRole"
+        responses:
+          default:
+            statusCode: "200"
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers : "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
+              method.response.header.Access-Control-Allow-Methods : "'*'"
+              method.response.header.Access-Control-Allow-Origin : "'*'"
+            responseTemplates:
+              application/json:
+                Fn::Sub: '#set($inputRoot = $input.path("$"))
+                {
+                  "urls": [#foreach($elem in $inputRoot.Items)
+                    {
+                      "url" : "$elem.url.S",
+                      #if($elem.screenshotURL.S.length() > 1)
+                      "screenshotURL": "https://s3-${AWS::Region}.amazonaws.com/${ScreenShotBucket}/$elem.screenshotURL.S",
+                      #end
+                      "status": "$elem.status.S"
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                    ]
+                }'
+        requestTemplates:
+          application/json:
+            Fn::Sub: '
+            {
+              "TableName":"${Service}",
+              "KeyConditionExpression":"PK = :v1 #if($input.params("token").length() > 36) and SK = :v2 #end",
+              "ExpressionAttributeValues":{
+                ":v1":{"S":"$input.params("token").substring(0,36)"}#if($input.params("token").length() > 36),
+                ":v2":{"S":"$input.params("token").substring(37)"}#end
+              }
+            }
+            '
+        uri: "arn:aws:apigateway:eu-west-1:dynamodb:action/Query"
+        passthroughBehavior: "never"
+        httpMethod: "POST"
+        type: "AWS"
+    options:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        '200':
+          description: 200 response
+          headers:
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+          schema:
+            $ref: '#/definitions/Empty'
+      x-amazon-apigateway-integration:
+        passthroughBehavior: when_no_match
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            responseParameters:
+              method.response.header.Access-Control-Allow-Headers: '''Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'''
+              method.response.header.Access-Control-Allow-Methods: '''GET'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            statusCode: 200
+        type: mock
+x-amazon-apigateway-gateway-responses:
+  DEFAULT_4XX:
+    responseParameters:
+      gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+      gatewayresponse.header.Access-Control-Allow-Methods: "'*'"
+    statusCode: '400'

@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Detectify screenshot service S3 Bucket
+Parameters:
+  BucketName:
+    Type: String
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+  ScreenShotBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn:
+      - S3Bucket
+    Properties:
+      Bucket:
+        Ref: S3Bucket
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Sub arn:aws:s3:::${BucketName}/*
+            Principal: "*"

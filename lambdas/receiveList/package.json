@@ -1,0 +1,9 @@
+{
+  "name": "receiveList",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "valid-url": "^1.0.9"
+  }
+}

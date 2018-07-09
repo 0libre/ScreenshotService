@@ -15,6 +15,13 @@ include .env
 export AWS_ACCESS_KEY_ID = $(ACCESS_KEY_ID)
 export AWS_SECRET_ACCESS_KEY = $(SECRET_ACCESS_KEY)
 
+.PHONY: deploy_fullstack
+deploy_fullstack:
+	make deploy_bucket
+	make deploy_screenshot_bucket
+	make deploy_dynamodb
+	make deploy_serverless
+
 #########################################################
 ##################### DEPLOY BUCKET #####################
 #########################################################
@@ -80,6 +87,10 @@ deploy_serverless:
 	ScreenShotBucket=$(SCREENSHOT_BUCKET_NAME) \
 	Service=$(STACK_NAME)
 	@echo "\n------DEPLOY DONE------\n"
+	@echo "\n----- API url START -----\n"
+	$(eval API_ID := $(shell AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} AWS_SECRET_ACCESS_KEY=${SECRET_ACCESS_KEY} aws apigateway get-rest-apis --query 'items[?name==`$(STACK_NAME)`].id' --output text))
+	@echo https://${API_ID}.execute-api.$(AWS_REGION).amazonaws.com/dev/
+	@echo "\n----- API url END -----\n"
 
 #############
 # DEPLOY DYNAMODB

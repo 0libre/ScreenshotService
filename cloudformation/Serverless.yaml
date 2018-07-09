@@ -129,7 +129,7 @@ Resources:
               - dynamodb:Query
             Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Service}
 
-  # LAMBDAS
+  # API
   DetectifyScreenshotAPI:
     Type: AWS::Serverless::Api
     Properties:
@@ -139,6 +139,8 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: !Sub s3://${Service}-deploy-${Environment}/swagger/Swagger.yaml
+
+  # LAMBDAS
   ReceiveListLambda:
     Type: AWS::Serverless::Function
     DependsOn:

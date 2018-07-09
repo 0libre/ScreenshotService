@@ -1,5 +1,5 @@
 # Screenshot Service
-A complete stack to receive URL:s to screenshot. The service will then make screenshots available in multiple sizes.
+A complete stack to receive URL:s to screenshot. The service will then make screenshots available using a generated token.
 
 ## Prerequisite
 * To use this service it assumes that you have an `Amazon Web Services account`.

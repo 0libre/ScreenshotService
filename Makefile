@@ -1,5 +1,5 @@
 ENVIRONMENT ?= dev
-STACK_NAME  ?= oliver-screenshot-service
+STACK_NAME  ?= your-service-name
 AWS_REGION  ?= eu-west-1
 
 DEPLOY_BUCKET_STACK_NAME:=$(STACK_NAME)-deploy

@@ -18,7 +18,10 @@ Make note of the API-gateway URL from the deployment or login to the `AWS consol
 
 ```javascript
 {
-    urls: [String]
+    urls: [
+    "http://feber.se/",
+    "http://aftonbladet.se"
+  ]
 }
 ```
 ###### Response:
@@ -26,30 +29,41 @@ You'll receive a response from the service for all your URL:s with a token to us
 
 ```javascript
 {
-    urls: [
-        {
-            url: String,
-            specificURLToken: String
-        }
-    ],
-    token: String
+  "urls": [
+    {
+      "url": "http://feber.se/",
+      "validated": true,
+      "token": "126f858c-84dc-11e8-8694-a5ffce5d6228-0"
+    },
+    {
+      "url": "http://aftonbladet.se",
+      "validated": true,
+      "token": "126f858c-84dc-11e8-8694-a5ffce5d6228-1"
+    }
+  ],
+  "token": "126f858c-84dc-11e8-8694-a5ffce5d6228"
 }
 ```
 ##### Retrive Screenshots
 
 Do a `GET` request to your API-gateway url with the token for the screenshots you wish to retrive.
 
-`https://yourapigatewayurl.com/${Token}`
+`https://yourapigatewayurl.com/126f858c-84dc-11e8-8694-a5ffce5d6228`
 
 ###### Response:
 ```javascript
 {
-    urls: [
-        {
-            url: String,
-            screenshotURL: String,
-            status: String
-        }
-    ]
+  "urls": [
+    {
+      "url": "http://feber.se/",
+      "screenshotURL": "https://s3-eu-west-1.amazonaws.com/your-service-name/f697697169abf10629a3b7f0802439ac.jpeg",
+      "status": "DONE"
+    },
+    {
+      "url": "http://aftonbladet.se",
+      "screenshotURL": "https://s3-eu-west-1.amazonaws.com/your-service-name/0010b68dc304fd6143a9e70f4f8dffdb.jpeg",
+      "status": "DONE"
+    }
+  ]
 }
 ```

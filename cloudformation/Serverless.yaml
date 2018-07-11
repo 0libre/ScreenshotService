@@ -11,8 +11,6 @@ Parameters:
     Type: String
 
 Resources:
-
-  # ROLES
   ApiRole:
     Type: AWS::IAM::Role
     Properties:
@@ -128,8 +126,6 @@ Resources:
             Action:
               - dynamodb:Query
             Resource: !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${Service}
-
-  # API
   DetectifyScreenshotAPI:
     Type: AWS::Serverless::Api
     Properties:
@@ -139,8 +135,6 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: !Sub s3://${Service}-deploy-${Environment}/swagger/Swagger.yaml
-
-  # LAMBDAS
   ReceiveListLambda:
     Type: AWS::Serverless::Function
     DependsOn:
@@ -176,8 +170,6 @@ Resources:
           ENV: !Sub ${Environment}
           TABLE: !Sub ${Service}
           BUCKET: !Sub ${Service}-screenshots-${Environment}
-
-  # STREAMS
   ScreenShotStream:
     Type: AWS::Lambda::EventSourceMapping
     DependsOn:

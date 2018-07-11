@@ -27,7 +27,7 @@ Resources:
         StreamViewType: NEW_IMAGE
 Outputs:
   StreamName:
-    Description: Output the StreamName
+    Description: Output the streams name
     Value:
       Fn::GetAtt: [ DetectifyScreenshotServiceDB , StreamArn ]
     Export:

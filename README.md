@@ -6,7 +6,7 @@ A complete stack to receive URL:s to screenshot. The service will then make scre
 * You'll also have to provide the `.env` file with credentials to this account to allow the `aws cli` to to upload the service to your account.
 
 ### Deployment
-Edit the resulting `.env.` file with your details and the run the following command to deploy the app to Amazon Web Service.
+Edit the `.envExample` file with your details, save as `.env` and the run the following command to deploy the app to Amazon Web Service.
 ```shell
 make deploy_fullstack
 ```
